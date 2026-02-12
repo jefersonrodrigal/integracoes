@@ -1,0 +1,5 @@
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <xsd:import schemaLocation="NFe_v4.00.xsd"/>
+  <xsd:import namespace="http://www.w3.org/2000/09/xmldsig#" schemaLocation="xmldsig-core-schema_v1.01.xsd"/>
+  <xsd:import schemaLocation="tiposBasico_v4.00.xsd"/>
+</xsd:schema>

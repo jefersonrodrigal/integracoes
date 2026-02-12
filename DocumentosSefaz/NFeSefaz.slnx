@@ -1,0 +1,9 @@
+<Solution>
+  <Project Path="NFe.Builders/NFe.Builders.csproj" />
+  <Project Path="NFe.Domain/NFe.Domain.csproj" />
+  <Project Path="NFe.Infrastructure/NFe.Infrastructure.csproj" />
+  <Project Path="NFe.Serialization/NFe.Serialization.csproj" />
+  <Project Path="NFe.Signing/NFe.Signing.csproj" />
+  <Project Path="NFe.Transmission/NFe.Transmission.csproj" />
+  <Project Path="NFe.Validation/NFe.Validation.csproj" />
+</Solution>
