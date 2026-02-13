@@ -1,16 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Xml;
+﻿using System.Xml;
 using System.Xml.Schema;
 
 namespace NFe.Validation;
 
-public class XmlSchemaValidator
+public class XmlSchemaValidate
 {
     private readonly XmlSchemaSet _schemas;
 
-    public XmlSchemaValidator(string schemaFolderPath)
+    public XmlSchemaValidate(string schemaFolderPath)
     {
         _schemas = new XmlSchemaSet();
 
@@ -36,9 +33,19 @@ public class XmlSchemaValidator
         };
 
         using var reader = XmlReader.Create(new StringReader(xmlContent), settings);
-
         while (reader.Read()) { }
 
         return errors;
+    }
+
+    public void ValidateOrThrow(string xmlContent)
+    {
+        var errors = Validate(xmlContent);
+
+        if (errors.Any())
+        {
+            throw new XmlSchemaValidationException(
+                "Erro de validação XSD: " + string.Join(" | ", errors));
+        }
     }
 }

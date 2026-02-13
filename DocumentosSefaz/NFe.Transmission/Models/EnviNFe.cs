@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Xml.Serialization;
-using NFe.Domain.Documents.NFe400;
+using NFeDocumento = NFe.Domain.Documents.NFe400.NFe;
 
 namespace NFe.Transmission.Models;
 
@@ -12,8 +12,8 @@ public class EnviNFe
 
     public string idLote { get; set; }
 
-    public int indSinc { get; set; } // 0 = assíncrono, 1 = síncrono
+    public int indSinc { get; set; }
 
     [XmlElement("NFe")]
-    public List<NFe> NFe { get; set; }
+    public List<NFeDocumento> NFe { get; set; }
 }

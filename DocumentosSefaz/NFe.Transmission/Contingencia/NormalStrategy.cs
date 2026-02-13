@@ -4,7 +4,7 @@ using System.Text;
 
 namespace NFe.Transmission.Contingencia
 {
-    internal class NormalStrategy
+    internal class NormalStrategy : IContingenciaStrategy
     {
     }
 }

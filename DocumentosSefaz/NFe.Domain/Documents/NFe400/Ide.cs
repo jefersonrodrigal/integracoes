@@ -1,25 +1,69 @@
-﻿using System;
+﻿using NFe.Transmission.Services.Enuns;
+using System;
+using System.Xml.Serialization;
 
 namespace NFe.Domain.Models;
 
 public class Ide
 {
-    public int cUF { get; set; }
-    public string cNF { get; set; }
-    public string natOp { get; set; }
-    public int mod { get; set; }
-    public int serie { get; set; }
-    public int nNF { get; set; }
-    public DateTime dhEmi { get; set; }
-    public int tpNF { get; set; }
-    public int idDest { get; set; }
-    public int cMunFG { get; set; }
-    public int tpImp { get; set; }
-    public int tpEmis { get; set; }
-    public int tpAmb { get; set; }
-    public int finNFe { get; set; }
-    public int indFinal { get; set; }
-    public int indPres { get; set; }
-    public int procEmi { get; set; }
-    public string verProc { get; set; }
+    [XmlElement("cUF")]
+    public int CUF { get; set; }
+
+    [XmlElement("cNF")]
+    public string CNF { get; set; }
+
+    [XmlElement("natOp")]
+    public string NatOp { get; set; }
+
+    [XmlElement("mod")]
+    public int Mod { get; set; }
+
+    [XmlElement("serie")]
+    public int Serie { get; set; }
+
+    [XmlElement("nNF")]
+    public int NNF { get; set; }
+
+    [XmlElement("dhEmi")]
+    public DateTimeOffset DhEmi { get; set; }
+
+    [XmlElement("tpNF")]
+    public int TpNF { get; set; }
+
+    [XmlElement("idDest")]
+    public int IdDest { get; set; }
+
+    [XmlElement("cMunFG")]
+    public int CMunFG { get; set; }
+
+    [XmlElement("tpImp")]
+    public int TpImp { get; set; }
+
+    [XmlElement("tpEmis")]
+    public TipoEmissao TpEmis { get; set; }
+
+    [XmlElement("tpAmb")]
+    public int TpAmb { get; set; }
+
+    [XmlElement("finNFe")]
+    public int FinNFe { get; set; }
+
+    [XmlElement("indFinal")]
+    public int IndFinal { get; set; }
+
+    [XmlElement("indPres")]
+    public int IndPres { get; set; }
+
+    [XmlElement("procEmi")]
+    public int ProcEmi { get; set; }
+
+    [XmlElement("verProc")]
+    public string VerProc { get; set; }
+
+    // Campos de contingência
+    [XmlElement("dhCont")]
+    public DateTimeOffset? DhCont { get; set; }
+
+    [XmlElement("xJust")]
+    public string XJust { get; set; }
 }

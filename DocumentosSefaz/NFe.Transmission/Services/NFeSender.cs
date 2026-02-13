@@ -1,124 +1,161 @@
-﻿using NFe.Signing;
+﻿using NFe.Signing.Interfaces;
 using NFe.Transmission;
+using NFe.Transmission.Interfaces;
+using NFe.Transmission.Response;
 using NFe.Transmission.Results;
+using NFe.Transmission.Services.Enuns;
 using System.Security.Cryptography.X509Certificates;
 using System.Xml;
-using System.Xml.Schema;
+using NFe.Validation;
 using System.Xml.Serialization;
+using NFeDocumento = NFe.Domain.Documents.NFe400.NFe;
 
 public class NFeSender
 {
-    private readonly XmlSchemaValidator _validator;
-    private readonly XmlSigner _signer;
+    private readonly XmlSchemaValidate _validator;
+    private readonly IXmlSignatureService _signer;
     private readonly NFeClient _client;
+    private readonly ISefazHealthChecker _healthChecker;
     private readonly X509Certificate2 _certificado;
 
     public NFeSender(
-        XmlSchemaValidator validator,
-        XmlSigner signer,
+        XmlSchemaValidate validator,
+        IXmlSignatureService signer,
         NFeClient client,
+        ISefazHealthChecker healthChecker,
         X509Certificate2 certificado)
     {
         _validator = validator;
         _signer = signer;
         _client = client;
+        _healthChecker = healthChecker;
         _certificado = certificado;
     }
 
-    public async Task<NFeSendResult> EnviarAsync(NFe nota)
+    public async Task<NFeSendResult> EnviarAsync(NFeDocumento notaOriginal)
     {
         try
         {
-            // 1️⃣ Serializar
-            var xml = Serialize(nota);
+            var resultadoNormal = await EnviarFluxoNormalAsync(notaOriginal);
 
-            // 2️⃣ Validar
-            _validator.ValidateOrThrow(xml);
+            if (resultadoNormal.Sucesso)
+                return resultadoNormal;
 
-            // 3️⃣ Assinar
-            var xmlAssinado = Assinar(xml);
-
-            // 4️⃣ Enviar normal
-            var retorno = await _client.EnviarAsync(xmlAssinado, UrlNormal());
-
-            var resultado = RejeicaoHandler.Processar(retorno);
-
-            // 5️⃣ Se sucesso
-            if (resultado.Sucesso)
+            if (_healthChecker.DeveAtivarContingencia(new SefazResponse
+             {
+                 StatusCode = int.TryParse(resultadoNormal.Codigo, out var parsed)
+                     ? parsed
+                     : null
+             }))
             {
-                return new NFeSendResult
-                {
-                    Sucesso = true,
-                    Codigo = resultado.Codigo,
-                    Mensagem = resultado.Mensagem,
-                    XmlAutorizado = retorno
-                };
+                return await EnviarFluxoContingenciaAsync(notaOriginal);
             }
 
-            // 6️⃣ Se deve ativar contingência
-            if (SefazHealthChecker.DeveAtivarContingencia(resultado.Codigo))
-            {
-                return await EnviarContingencia(nota);
-            }
-
-            // 7️⃣ Erro de negócio
-            return new NFeSendResult
-            {
-                Sucesso = false,
-                Codigo = resultado.Codigo,
-                Mensagem = resultado.Mensagem
-            };
+            return resultadoNormal;
         }
-        catch (Exception ex)
+        catch
         {
-            // Timeout, erro de rede, etc.
-            return await EnviarContingencia(nota);
+            // Falha técnica → contingência
+            if (_healthChecker.DeveAtivarContingencia(
+                new SefazResponse { HouveFalhaComunicacao = true }))
+            {
+                return await EnviarFluxoContingenciaAsync(notaOriginal);
+            }
+
+            throw;
         }
     }
 
-    private async Task<NFeSendResult> EnviarContingencia(NFe nota)
+    // ---------------------------
+    // FLUXO NORMAL
+    // ---------------------------
+    private async Task<NFeSendResult> EnviarFluxoNormalAsync(NFeDocumento nota)
     {
-        nota.InfNFe.ide.tpEmis = 7;
-        nota.InfNFe.ide.dhCont = DateTime.Now;
-        nota.InfNFe.ide.xJust = "Contingencia automatica SVC";
+        var xml = PrepararXml(nota);
+        var retornoXml = await _client.EnviarAsync(xml, UrlNormal());
 
+        return InterpretarResultado(retornoXml, false);
+    }
+
+    // ---------------------------
+    // FLUXO CONTINGÊNCIA
+    // ---------------------------
+    private async Task<NFeSendResult> EnviarFluxoContingenciaAsync(NFeDocumento notaOriginal)
+    {
+        var notaContingencia = ClonarNota(notaOriginal);
+
+        notaContingencia.InfNFe.Ide.TpEmis = TipoEmissao.SVCRS;
+        notaContingencia.InfNFe.Ide.DhCont = DateTimeOffset.Now;
+        notaContingencia.InfNFe.Ide.XJust = "Contingência automática SVC";
+
+        var xml = PrepararXml(notaContingencia);
+        var retornoXml = await _client.EnviarAsync(xml, UrlSVC());
+
+        return InterpretarResultado(retornoXml, true);
+    }
+
+    // ---------------------------
+    // PREPARAÇÃO XML
+    // ---------------------------
+    private string PrepararXml(NFeDocumento nota)
+    {
         var xml = Serialize(nota);
-        var xmlAssinado = Assinar(xml);
-
-        var retorno = await _client.EnviarAsync(xmlAssinado, UrlSVC());
-
-        var resultado = RejeicaoHandler.Processar(retorno);
-
-        return new NFeSendResult
-        {
-            Sucesso = resultado.Sucesso,
-            EmContingencia = true,
-            Codigo = resultado.Codigo,
-            Mensagem = resultado.Mensagem,
-            XmlAutorizado = retorno
-        };
+        _validator.ValidateOrThrow(xml);
+        return Assinar(xml);
     }
 
     private string Assinar(string xml)
     {
         var doc = new XmlDocument();
+        doc.PreserveWhitespace = true;
         doc.LoadXml(xml);
 
         var signed = _signer.Sign(doc, _certificado);
-
         return signed.OuterXml;
     }
 
-    private string Serialize(NFe nota)
+    private string Serialize(NFeDocumento nota)
     {
-        var serializer = new XmlSerializer(typeof(NFe));
+        var serializer = new XmlSerializer(typeof(NFeDocumento));
+
         var ns = new XmlSerializerNamespaces();
-        ns.Add("", "http://www.portalfiscal.inf.br/nfe");
+        ns.Add(string.Empty, "http://www.portalfiscal.inf.br/nfe");
 
         using var sw = new StringWriter();
         serializer.Serialize(sw, nota, ns);
 
         return sw.ToString();
+    }
+
+    // ---------------------------
+    // INTERPRETAÇÃO
+    // ---------------------------
+    private NFeSendResult InterpretarResultado(string retornoXml, bool contingencia)
+    {
+        var resultado = RejeicaoHandler.Processar(retornoXml);
+
+        return new NFeSendResult
+        {
+            Sucesso = resultado.Sucesso,
+            EmContingencia = contingencia,
+            Codigo = resultado.Codigo,
+            Mensagem = resultado.Mensagem,
+            XmlAutorizado = retornoXml
+        };
+    }
+
+    // ---------------------------
+    // CLONE SEGURO
+    // ---------------------------
+    private NFeDocumento ClonarNota(NFeDocumento nota)
+    {
+        var serializer = new XmlSerializer(typeof(NFeDocumento));
+
+        using var ms = new MemoryStream();
+        serializer.Serialize(ms, nota);
+
+        ms.Position = 0;
+        return (NFeDocumento)serializer.Deserialize(ms)!;
     }
 
     private string UrlNormal()

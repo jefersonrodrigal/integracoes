@@ -1,6 +1,5 @@
-﻿using System.Xml;
-
-namespace NFe.Transmission.Results;
+﻿using NFe.Transmission.Results;
+using System.Xml;
 
 public static class RejeicaoHandler
 {
@@ -9,13 +8,15 @@ public static class RejeicaoHandler
         var doc = new XmlDocument();
         doc.LoadXml(xmlRetorno);
 
-        var cStat = doc.GetElementsByTagName("cStat")[0]?.InnerText;
+        var cStatNode = doc.GetElementsByTagName("cStat");
+        var cStat = cStatNode.Count > 0 ? cStatNode[0].InnerText : null;
         var xMotivo = doc.GetElementsByTagName("xMotivo")[0]?.InnerText;
 
         var result = new SefazResult
         {
             Codigo = cStat,
-            Mensagem = xMotivo
+            Mensagem = xMotivo,
+            Sucesso = false // define padrão aqui se quiser explícito
         };
 
         switch (cStat)
@@ -46,8 +47,6 @@ public static class RejeicaoHandler
                 result.AcaoSugerida = "Analisar retorno manualmente.";
                 break;
         }
-
-        result.Sucesso ??= false;
 
         return result;
     }

@@ -1,10 +1,20 @@
-﻿using NFe.Transmission.Contingencia;
+﻿using NFe.Transmission;
+using NFe.Transmission.Contingencia;
+using NFe.Transmission.Interfaces;
+using NFe.Transmission.Response;
 
-public static class ContingenciaFactory
+public class ContingenciaFactory : IContingenciaFactory
 {
-    public static IContingenciaStrategy Criar(string codigoSefaz)
+    private readonly ISefazHealthChecker _healthChecker;
+
+    public ContingenciaFactory(ISefazHealthChecker healthChecker)
     {
-        if (SefazHealthChecker.DeveAtivarContingencia(codigoSefaz))
+        _healthChecker = healthChecker;
+    }
+
+    public IContingenciaStrategy Criar(SefazResponse response)
+    {
+        if (_healthChecker.DeveAtivarContingencia(response))
             return new SvcStrategy();
 
         return new NormalStrategy();

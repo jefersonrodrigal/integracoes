@@ -10,40 +10,46 @@ public class XmlSigner
 {
     public XmlDocument Sign(XmlDocument xmlDoc, X509Certificate2 certificate)
     {
+        if (!certificate.HasPrivateKey)
+            throw new InvalidOperationException("Certificado não possui chave privada.");
+
         xmlDoc.PreserveWhitespace = true;
 
-        var signedXml = new SignedXml(xmlDoc);
+        var signedXml = new SignedXml(xmlDoc)
+        {
+            SigningKey = certificate.GetRSAPrivateKey()
+        };
 
-        signedXml.SigningKey = certificate.GetRSAPrivateKey();
+        var nsmgr = new XmlNamespaceManager(xmlDoc.NameTable);
+        nsmgr.AddNamespace("nfe", "http://www.portalfiscal.inf.br/nfe");
 
-        // Referência ao Id da infNFe
-        var reference = new Reference();
-        reference.Uri = "#" + GetInfNFeId(xmlDoc);
+        var infNFeNode = xmlDoc.SelectSingleNode("//nfe:infNFe", nsmgr)
+            ?? throw new InvalidOperationException("Elemento infNFe não encontrado.");
 
-        // Transform enveloped
+        var id = infNFeNode.Attributes["Id"]?.Value
+            ?? throw new InvalidOperationException("Atributo Id não encontrado.");
+
+        var reference = new Reference
+        {
+            Uri = "#" + id,
+            DigestMethod = SignedXml.XmlDsigSHA256Url
+        };
+
         reference.AddTransform(new XmlDsigEnvelopedSignatureTransform());
-
-        // Canonicalização
         reference.AddTransform(new XmlDsigC14NTransform());
-
-        reference.DigestMethod = SignedXml.XmlDsigSHA1Url;
 
         signedXml.AddReference(reference);
 
-        signedXml.SignedInfo.SignatureMethod = SignedXml.XmlDsigRSASHA1Url;
+        signedXml.SignedInfo.SignatureMethod = SignedXml.XmlDsigRSASHA256Url;
         signedXml.SignedInfo.CanonicalizationMethod = SignedXml.XmlDsigCanonicalizationUrl;
 
-        // Certificado
         var keyInfo = new KeyInfo();
         keyInfo.AddClause(new KeyInfoX509Data(certificate));
         signedXml.KeyInfo = keyInfo;
 
         signedXml.ComputeSignature();
 
-        XmlElement signatureElement = signedXml.GetXml();
-
-        // Inserir dentro do infNFe
-        XmlNode infNFeNode = xmlDoc.GetElementsByTagName("infNFe")[0];
+        var signatureElement = signedXml.GetXml();
         infNFeNode.AppendChild(xmlDoc.ImportNode(signatureElement, true));
 
         return xmlDoc;
