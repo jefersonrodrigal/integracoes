@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -9,6 +9,7 @@
   <ItemGroup>
     <ProjectReference Include="..\NFe.Domain\NFe.Domain.csproj" />
     <ProjectReference Include="..\NFe.Infrastructure\NFe.Infrastructure.csproj" />
+    <ProjectReference Include="..\NFe.Serialization\NFe.Serialization.csproj" />
   </ItemGroup>
 
 </Project>

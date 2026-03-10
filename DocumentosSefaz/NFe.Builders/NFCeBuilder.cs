@@ -3,17 +3,17 @@ using NFe.Serialization.Zeus;
 
 namespace NFe.Builders;
 
-public class NFeBuilder
+public class NFCeBuilder
 {
     private readonly IZeusXmlSerializer _serializer;
 
-    public NFeBuilder(IZeusXmlSerializer? serializer = null)
+    public NFCeBuilder(IZeusXmlSerializer? serializer = null)
     {
         _serializer = serializer ?? new ZeusXmlSerializer();
     }
 
-    public string GerarXml(object nfeZeus)
+    public string GerarXml(object nfceZeus)
     {
-        return _serializer.GerarXmlNFe(nfeZeus);
+        return _serializer.GerarXmlNFCe(nfceZeus);
     }
 }

@@ -10,4 +10,8 @@
     <ProjectReference Include="..\NFe.Domain\NFe.Domain.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Zeus.Net.NFe.NFCe" Version="2026.3.3.2126" />
+  </ItemGroup>
+
 </Project>
