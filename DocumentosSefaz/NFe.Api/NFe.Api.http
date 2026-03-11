@@ -1,0 +1,29 @@
+@NFe.Api_HostAddress = http://localhost:5262
+
+GET {{NFe.Api_HostAddress}}/api/transmissao/health
+Accept: application/json
+
+###
+
+POST {{NFe.Api_HostAddress}}/api/transmissao/enviar
+Content-Type: application/json
+
+{
+  "correlationId": "pdv-maui-001",
+  "modelo": 65,
+  "xmlAssinado": "<NFe xmlns='http://www.portalfiscal.inf.br/nfe'><infNFe Id='NFe00000000000000000000000000000000000000000000' versao='4.00'></infNFe></NFe>"
+}
+
+###
+
+POST {{NFe.Api_HostAddress}}/api/transmissao/assinar-e-enviar
+Content-Type: application/json
+
+{
+  "correlationId": "pdv-maui-002",
+  "empresaId": "loja-001",
+  "modelo": 65,
+  "xml": "<NFe xmlns='http://www.portalfiscal.inf.br/nfe'><infNFe Id='NFe00000000000000000000000000000000000000000000' versao='4.00'></infNFe></NFe>"
+}
+
+###
